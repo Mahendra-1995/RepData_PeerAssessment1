@@ -7,19 +7,64 @@ output:
 
 
 ## Loading and preprocessing the data
-
-
+```{r loaddata, echo=TRUE}
+activity <- read.csv("activity.csv")
+head(activity)
+activity$date <- as.Date(activity$date)
+```
 
 ## What is mean total number of steps taken per day?
-
-
+```{r mean of the steps, echo=TRUE}
+totalsteps <- aggregate(steps ~ date, data = activity, sum, na.rm= TRUE)
+head(totalsteps,10)
+hist(totalsteps$steps, main = "Total Steps Per Day", xlab = "Steps", ylim = c(0,40),labels = TRUE)
+mean(totalsteps$steps)
+median(totalsteps$steps)
+library(knitr)
+library(ggplot2)
+```
 
 ## What is the average daily activity pattern?
 
-
+```{r Average Daily Pattern, echo=TRUE}
+interval <- aggregate(steps~interval, activity, mean, na.rm=TRUE)
+plot(interval$interval, interval$steps,type="l", main = "Average Daily Activity Pattern", xlab = "Interval", ylab = "Average no.of.steps taken", col = "orange")
+##Which 5-minute interval, on average across all days, contains the max number of steps?
+maxinterval <- interval$interval[which(interval$steps == max(interval$steps))]
+maxinterval
+```
 
 ## Imputing missing values
 
 
+```{r}
+sum(is.na(imputedata$steps))
+
+imputedata <- activity
+for(i in 1:length(imputedata$steps)){
+  if(is.na(imputedata$steps[i])){
+    imputedata$steps[i] <- interval$steps[interval$interval == imputedata$interval[i]]
+  }
+}
+
+sum1 <- aggregate(steps~date, imputedata, sum)
+
+hist(sum1$steps, main = "Total Steps Per Day", xlab = "Steps", ylim = c(0,40), labels = TRUE)
+mean(sum1$steps)
+median(sum1$steps)
+
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
+```{r weekdays echo =TRUE}
+imputedata$date <- as.Date(imputedata$date)
+
+imputedata$wkdy <- "weekday"
+head(imputedata$date)
+imputedata$wkdy[weekdays(imputedata$date) == "Saturday" | weekdays(imputedata$date) == "Sunday"] <- "Weekend"
+imputedata$wkdy <- as.factor(imputedata$wkdy)
+imputeinterval <- aggregate(steps~interval + wkdy, imputedata, mean, na.rm = TRUE)
+
+g <- ggplot(imputeinterval, aes(interval,steps))
+g + facet_grid(wkdy ~ .) + geom_line(stat = "identity") +ggtitle("Average number of steps per 5 min interval")
+```
